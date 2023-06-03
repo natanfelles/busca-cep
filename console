@@ -1,0 +1,96 @@
+#!/usr/bin/env php
+<?php
+require __DIR__ . '/vendor/autoload.php';
+
+use Framework\CLI\CLI;
+use Framework\CLI\Command;
+use Framework\CLI\Console;
+use Framework\HTTP\Client\Client;
+use Framework\HTTP\Client\Request;
+
+class CEP extends Command
+{
+    protected string $description = 'Busca CEP através do endereço.';
+
+    public function run() : void
+    {
+        $estado = CLI::prompt('Estado');
+        $cidade = CLI::prompt('Cidade');
+        $logradouro = CLI::prompt('Logradouro');
+        $client = new Client();
+        $request = new Request($this->makeUrl($estado, $cidade, $logradouro));
+        $response = $client->run($request);
+        $json = $response->getJson(true);
+        if ($json === false) {
+            CLI::error('Endereço inválido.');
+        }
+        if (isset($json['erro']) && $json['erro'] === true) {
+            CLI::error('CEP não encontrado.');
+        }
+        if (empty($json)) {
+            CLI::write('Nenhum CEP encontrado.', 'yellow');
+            return;
+        }
+        usort($json, function($c1, $c2){
+            return $c1['cep'] <=> $c2['cep'];
+        });
+        $counter = 0;
+        CLI::write(count($json) . ' CEPs encontrados:', 'green');
+        foreach($json as $object) {
+            $data = [];
+            foreach($object as $key => $value) {
+                $data[] = [$key, $value];
+            }
+            CLI::write(++$counter . ')', 'green');
+            CLI::table($data);
+            CLI::newLine();
+        }
+    }
+
+    protected function makeUrl(
+        string $estado,
+        string $cidade,
+        string $logradouro
+    ) : string {
+        $estado = urlencode($estado);
+        $cidade = urlencode($cidade);
+        $logradouro = urlencode($logradouro);
+        return "http://viacep.com.br/ws/{$estado}/{$cidade}/{$logradouro}/json/";
+    }
+}
+
+class Endereco extends Command
+{
+    protected string $description = 'Busca endereço através do CEP.';
+
+    public function run() : void
+    {
+        $cep = $this->console->getArgument(0) ?? CLI::prompt('Insira um CEP');
+        $client = new Client();
+        $request = new Request($this->makeUrl($cep));
+        $response = $client->run($request);
+        $json = $response->getJson(true);
+        if ($json === false) {
+            CLI::error('CEP inválido.');
+        }
+        if (isset($json['erro']) && $json['erro'] === true) {
+            CLI::error('Endereço não encontrado.');
+        }
+        $data = [];
+        foreach($json as $key => $value) {
+            $data[] = [$key, $value];
+        }
+        CLI::write('1 endereço encontrado:', 'green');
+        CLI::table($data);
+    }
+
+    protected function makeUrl(string $cep) : string
+    {
+        return "http://viacep.com.br/ws/{$cep}/json/";
+    }
+}
+
+$console = new Console();
+$console->addCommand(CEP::class);
+$console->addCommand(Endereco::class);
+$console->run();
