@@ -11,6 +11,12 @@ use Framework\HTTP\Client\Request;
 class CEP extends Command
 {
     protected string $description = 'Busca CEP através do endereço.';
+    protected array $options = [
+        '--estado' => 'Sigla do estado.',
+        '--cidade' => 'Nome da cidade.',
+        '--logradouro' => 'Logradouro (avenida, rua, etc).',
+    ];
+    protected string $usage = 'cep [options]';
 
     public function run() : void
     {
@@ -62,6 +68,7 @@ class CEP extends Command
 class Endereco extends Command
 {
     protected string $description = 'Busca endereço através do CEP.';
+    protected string $usage = 'endereco [cep]';
 
     public function run() : void
     {
