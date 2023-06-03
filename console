@@ -14,9 +14,9 @@ class CEP extends Command
 
     public function run() : void
     {
-        $estado = CLI::prompt('Estado');
-        $cidade = CLI::prompt('Cidade');
-        $logradouro = CLI::prompt('Logradouro');
+        $estado = $this->console->getOption('estado') ?? CLI::prompt('Estado');
+        $cidade = $this->console->getOption('cidade') ?? CLI::prompt('Cidade');
+        $logradouro = $this->console->getOption('logradouro') ?? CLI::prompt('Logradouro');
         $client = new Client();
         $request = new Request($this->makeUrl($estado, $cidade, $logradouro));
         $response = $client->run($request);
